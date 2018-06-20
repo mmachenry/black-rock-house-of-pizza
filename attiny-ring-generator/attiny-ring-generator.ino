@@ -1,61 +1,33 @@
 int inputPin = 1;
 int forwardReversePin = 3;
 int ringModePin = 4;
-
-int THRESHOLD = 512;
-int RING_DELAY = 50;
+int ringDelay = 50; // 20Hz
+int ringIteration = 0;
 
 void setup() {
-  // put your setup code here, to run once:
   pinMode(inputPin, INPUT);
   pinMode(forwardReversePin, OUTPUT);
   pinMode(ringModePin, OUTPUT);
 }
 
-boolean shouldRing = false;
-boolean isHigh = false;
-int ringIterationCounter = 0;
-boolean ringPhase = false;
 void loop() {
-  // determine if we want to ring the phone based on the input pin
-  boolean currentShouldRing = digitalRead(inputPin);
-  if (!shouldRing && currentShouldRing) {
-    shouldRing = true;
-    isHigh = true;
-    ringIterationCounter = 0;
-    ringPhase = true;
-  }
-  else if (shouldRing && !currentShouldRing) {
-    shouldRing = false;
-  }
+  if (digitalRead(inputPin)) {
 
-  if (shouldRing) {
-    if (ringPhase) {
-      // We're in the phase where we ring, set the pin according to our state
-      digitalWrite(forwardReversePin, isHigh ? HIGH : LOW);
+    if (ringIteration < 20) {
       digitalWrite(ringModePin, HIGH);
-
-      // Flip our state
-      isHigh = !isHigh;
-
-      // Determine if we should exit the ring phase
-      if (++ringIterationCounter >= 20) {
-        ringPhase = false;
-        ringIterationCounter = 0;
-      }
+      digitalWrite(forwardReversePin, ringIteration % 2 == 0 ? HIGH : LOW);
+    } else {
+      digitalWrite(ringModePin, HIGH);
     }
-    else {
-      digitalWrite(forwardReversePin, LOW);
-      digitalWrite(ringModePin, LOW);
-      if (++ringIterationCounter >= 60) {
-        ringPhase = true;
-        ringIterationCounter = 0;
-      }
+
+    if (ringIteration < 80) { // 20Hz * 4 seconds = 80 iterations
+      ringIteration++;
+    } else {
+      ringIteration = 0;
     }
   }
   else {
-    digitalWrite(forwardReversePin, LOW);
-    digitalWrite(ringModePin, LOW);
+    ringIteration = 0;
   }
-  delay(RING_DELAY);
+  delay(ringDelay);
 }
