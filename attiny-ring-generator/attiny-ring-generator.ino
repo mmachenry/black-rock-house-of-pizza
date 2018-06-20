@@ -7,6 +7,7 @@ int RING_DELAY = 50;
 
 void setup() {
   // put your setup code here, to run once:
+  pinMode(inputPin, INPUT);
   pinMode(forwardReversePin, OUTPUT);
   pinMode(ringModePin, OUTPUT);
 }
@@ -17,7 +18,7 @@ int ringIterationCounter = 0;
 boolean ringPhase = false;
 void loop() {
   // determine if we want to ring the phone based on the input pin
-  boolean currentShouldRing = analogRead(inputPin) > THRESHOLD;
+  boolean currentShouldRing = digitalRead(inputPin);
   if (!shouldRing && currentShouldRing) {
     shouldRing = true;
     isHigh = true;
