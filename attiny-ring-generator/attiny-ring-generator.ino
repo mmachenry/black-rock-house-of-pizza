@@ -17,7 +17,7 @@ void loop() {
       digitalWrite(ringModePin, HIGH);
       digitalWrite(forwardReversePin, ringIteration % 2 == 0 ? HIGH : LOW);
     } else {
-      digitalWrite(ringModePin, HIGH);
+      digitalWrite(ringModePin, LOW);
     }
 
     if (ringIteration < 80) { // 20Hz * 4 seconds = 80 iterations
