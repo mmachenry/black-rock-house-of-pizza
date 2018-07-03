@@ -44,7 +44,15 @@ def serenCall():
 
 		# Start the call
 		call_in_progress = True
-		pid = subprocess.Popen(['seren', '-N', '-c', PHONE_IP]).pid
+		pid = subprocess.Popen([
+			'seren',
+			'-N',
+			'-n', 'phone',
+			'-c', PHONE_IP,
+			'-C', 0,
+			'-d', 'plughw:1,0',
+			'-D', 'plughw:1,0',
+		]).pid
 	elif call_in_progress and not GPIO.input(OFF_HOOK_PIN)
 		print 'Terminating seren call'
 		call_in_progress = False
