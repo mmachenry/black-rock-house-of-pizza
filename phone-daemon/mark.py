@@ -11,7 +11,7 @@ RING_MODE_PIN = 25
 PHONE_IP = '192.168.0.102'
 
 # TCP server constants
-TCP_IP = '127.0.0.1'
+TCP_IP = '192.168.0.105'
 TCP_PORT = 5005
 BUFFER_SIZE = 1
 LISTEN_DURATION = 0.1
@@ -26,7 +26,6 @@ FREE_UP_DURATION = 0.1
 # Global variables
 call_in_progress = False
 ring_for_count = 0
-seren_pid = None
 
 # GPIO initialization
 GPIO.setmode(GPIO.BCM)
@@ -35,6 +34,7 @@ GPIO.setup(RING_MODE_PIN, GPIO.OUT)
 
 # Start or stop a seren call
 def serenCall():
+	pid = None
 	if not call_in_progress and GPIO.input(OFF_HOOK_PIN):
 		print 'Initiating seren call'
 
@@ -44,11 +44,11 @@ def serenCall():
 
 		# Start the call
 		call_in_progress = True
-		seren_pid = subprocess.Popen(['seren', '-N', '-c', PHONE_IP]).pid
+		pid = subprocess.Popen(['seren', '-N', '-c', PHONE_IP]).pid
 	elif call_in_progress and not GPIO.input(OFF_HOOK_PIN)
 		print 'Terminating seren call'
 		call_in_progress = False
-		os.kill(seren_pid, signal.SIGTERM)
+		os.kill(pid, signal.SIGTERM)
 
 	# Cede control to another thread
 	time.sleep(FREE_UP_DURATION)
