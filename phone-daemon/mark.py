@@ -5,12 +5,10 @@ import os, select, signal, socket, subprocess, sys, threading, time
 
 # GPIO pin constants
 OFF_HOOK_PIN = 5
-# TODO: which pin did we actually use?
-RING_PIN = 4
+RING_MODE_PIN = 25
 
 # Seren constants
-# TODO: what is this IP address really?
-PHONE_IP = '192.168.0.104'
+PHONE_IP = '192.168.0.102'
 
 # TCP server constants
 TCP_IP = '127.0.0.1'
@@ -20,8 +18,7 @@ LISTEN_DURATION = 0.1
 SHOULD_RING_MESSAGE = '1'
 
 # Phone constants
-# TODO: what is the correct number of seconds?
-RING_DURATION = 15
+RING_DURATION = 4
 
 # Thread constants
 FREE_UP_DURATION = 0.1
@@ -34,7 +31,7 @@ seren_pid = None
 # GPIO initialization
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(OFF_HOOK_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-GPIO.setup(RING_PIN, GPIO.OUT)
+GPIO.setup(RING_MODE_PIN, GPIO.OUT)
 
 # Start or stop a seren call
 def serenCall():
@@ -42,7 +39,7 @@ def serenCall():
 		print 'Initiating seren call'
 
 		# Stop ringing immediately
-		GPIO.ouput(RING_PIN, GPIO.LOW)
+		GPIO.ouput(RING_MODE_PIN, GPIO.LOW)
 		ring_for_count = 0
 
 		# Start the call
@@ -61,11 +58,11 @@ def serenCall():
 def ringThePhone():
 	if ring_for_count > 0 and not call_in_progress:
 		print 'Ringing the phone'
-		GPIO.output(RING_PIN, GPIO.HIGH)
+		GPIO.output(RING_MODE_PIN, GPIO.HIGH)
 		ring_for_count = ring_for_count - 1
 		time.sleep(RING_DURATION)
 	else:
-		GPIO.output(RING_PIN, GPIO.LOW)
+		GPIO.output(RING_MODE_PIN, GPIO.LOW)
 		time.sleep(FREE_UP_DURATION)
 
 # Initiate the TCP socket to listen for calls
