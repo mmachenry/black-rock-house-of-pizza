@@ -45,7 +45,7 @@ def serenCall():
 		# Start the call
 		call_in_progress = True
 		pid = subprocess.Popen([
-			'seren',
+			'/home/pi/seren/seren',
 			'-N',
 			'-n', 'phone',
 			'-c', PHONE_IP,
