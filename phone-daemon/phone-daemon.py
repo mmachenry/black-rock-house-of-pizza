@@ -87,7 +87,7 @@ class CallListener:
       printDebug('TCP server is listening')
       while True:
         try:
-          (ready_to_read, ready_to_write, in_error) = select.select([tcp_server], [], [], LISTEN_DURATION)
+          (ready_to_read, ready_to_write, in_error) = select.select([tcp_server], [], [], global_config['TCP']['ListenDuration'])
           if len(ready_to_read) > 0:
             # If our server is ready to read, then there's an incoming connection to accept
             printDebug('Server accepting client')
@@ -95,7 +95,7 @@ class CallListener:
             printDebug('Connected to ', address)
             while True:
               # Determine if our client socket is ready to read or in error
-              (ready_to_read, ready_to_write, in_error) = select.select([client_socket], [], [], LISTEN_DURATION)
+              (ready_to_read, ready_to_write, in_error) = select.select([client_socket], [], [], global_config['TCP']['ListenDuration'])
               if len(ready_to_read) > 0:
                 # There's data to read
                 printDebug('Reading data from client ', address)
@@ -191,7 +191,7 @@ class CallMaker:
         message = global_config['TCP']['ShouldRingMessage'] if (self.should_call) else global_config['TCP']['OKMessage']
         printDebug('Sending message ', message)
         try:
-          (ready_to_read, ready_to_write, in_error) = select.select([], [tcp_client], [], LISTEN_DURATION)
+          (ready_to_read, ready_to_write, in_error) = select.select([], [tcp_client], [], global_config['TCP']['ListenDuration'])
           if len(ready_to_write):
             sent = tcp_client.send(message)
             if sent === 0:
