@@ -35,7 +35,7 @@ class SerenProcess:
       ]).pid
       printDebug('New call started')
 
-  def answer_incoming_call(self):
+  def answer_incoming_call(self, host):
     printDebug('Answering incoming call')
     if is_call_in_progress(self):
       raise Exception('Attempt to answer incoming call while call in progress')
@@ -49,7 +49,7 @@ class SerenProcess:
         '-D', 'plughw:1,0',                 # capture device
         '-a',                               # auto-accept calls
         '-C', 0,                            # lowest complexity
-        '-c', config['Default']['RemoteIP'] # remote seren IP address
+        '-c', host                          # remote seren IP address
       ]).pid
       printDebug('Incoming call answered')
 
@@ -65,102 +65,25 @@ class SerenProcess:
   def is_call_in_progress():
     return not self.pid is None
 
-class CallListener:
-  def __init__(self):
-    self.internal_thread = None
-    self.incoming_call_detected = False
+class CallListener(Thread):
+  def __init__(self, seren, hosts, port):
+    self.seren = seren
+    self.hosts = hosts
+    self.port = port
+    self.context = zmq.Context()
+    self.socket = context.socket(zmq.SUB)
+    super(name='Call Listener')
 
-  def start(self):
-    if self.internal_thread:
-      raise Exception('Do not start twice')
-    else:
-      self.internal_thread = threading.Thread(name='Call Listener', target=self.__run__)
-      self.internal_thread.start()
-
-  def __run__(self):
+  def run(self):
+    for host in self.hosts:
+      self.socket.connect ("tcp://%s:%s" % (host, self.port))
+    self.socket.setsockopt(zmq.SUBSCRIBE, config['Default']['Name'])
     while True:
-      printDebug('Listener creating TCP server')
-      tcp_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-      tcp_server.bind(('127.0.0.1', global_config['TCP']['Port']))
-      tcp_server.setblocking(False) # don't block other threads
-      tcp_server.listen()
-      printDebug('TCP server is listening')
-      while True:
-        try:
-          (ready_to_read, ready_to_write, in_error) = select.select([tcp_server], [], [], global_config['TCP']['ListenDuration'])
-          if len(ready_to_read) > 0:
-            # If our server is ready to read, then there's an incoming connection to accept
-            printDebug('Server accepting client')
-            (client_socket, address) = tcp_server.accept()
-            printDebug('Connected to ', address)
-            while True:
-              # Determine if our client socket is ready to read or in error
-              (ready_to_read, ready_to_write, in_error) = select.select([client_socket], [], [], global_config['TCP']['ListenDuration'])
-              if len(ready_to_read) > 0:
-                # There's data to read
-                printDebug('Reading data from client ', address)
-                data = client_socket.recv(1)
-                if not data:
-                  printDebug('Client disconnected ', address)
-                  break # ready to read but there's no data -> disconnected
-                elif data == global_config['TCP']['ShouldRingMessage']
-                  printDebug('Incoming call detected ', address)
-                   # We got the expected string, so we've detected a call
-                  self.incoming_call_detected = True
-                else:
-                  printDebug('OK detected ', address)
-                  self.incoming_call_detected = False
-              elif len(in_error) > 0:
-                printDebug('Client in error ', address)
-                # Something is wrong with the client,
-                # break out of the loop where we read from it
-                break
-
-              # Free up this thread so that another one can go
-              time.sleep(global_config['General']['FreeUpDuration'])
-
-            # If we broke out of the above loop, either:
-            #   a) the client disconnected
-            #   b) the client died
-            # So try to close the connection and re-start the loop
-            # that waits for a connection
-            printDebug('Closing connection with ', address)
-            self.incoming_call_detected = False
-            try:
-              client_socket.shutdown()
-              client_socket.close()
-            except:
-              pass
-          elif len(in_error) > 0:
-            # Something is wrong with the server, restart it
-            printDebug('Closing listening server')
-            self.incoming_call_detected = False
-            try:
-              tcp_server.shutdown()
-              tcp_server.close()
-            except:
-              pass
-            break
-          else:
-            time.sleep(global_config['General']['FreeUpDuration'])
-        except:
-          # Something is wrong with the server, restart it
-          printDebug('Closing listening server')
-          self.incoming_call_detected = False
-          try:
-            client_socket.shutdown()
-            client_socket.close()
-          except:
-            pass
-          try:
-            tcp_server.shutdown()
-            tcp_server.close()
-          except:
-            pass
-          break
-
-  def is_call_available(self):
-    return self.incoming_call_detected
+      message_data = socket.recv().split()
+      printDebug("Call Listener got: %s" % message_data)
+      (topic, message) = message_data.split()
+      if not self.seren.is_call_in_progress():
+        self.seren.answer_incoming_call(message)
 
 class CallMaker:
   def __init__(self):
@@ -244,7 +167,10 @@ class PhoneRinger:
 def main():
   GPIO.setmode(GPIO.BCM)
   seren = SerenProcess()
-  call_listener = CallListener()
+  call_listener = CallListener(
+    seren = seren,
+    hosts = [config['Default']['RemoteIP']],
+    post = global_config['TCP']['Port'])
   call_maker = CallMaker()
   phone_ringer = PhoneRinger()
   call_listener.start()
